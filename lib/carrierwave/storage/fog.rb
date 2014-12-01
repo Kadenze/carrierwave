@@ -156,7 +156,7 @@ module CarrierWave
       def connection
         @connection ||= begin
           options = credentials = uploader.fog_credentials
-          self.class.connection_cache[credentials] ||= ::Fog::Storage.new(options)
+          ::Fog::Storage.new(options)
         end
       end
 
