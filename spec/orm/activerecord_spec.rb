@@ -1609,6 +1609,10 @@ describe CarrierWave::ActiveRecord do
     it "should not raise ArgumentError when with_lock method is called" do
       expect { @event.with_lock {} }.to_not raise_error
     end
+
+    it "should not raise ArgumentError when with_lock method is called" do
+      expect { @event.with_lock {} }.to_not raise_error
+    end
   end
 
   describe '#reload' do
