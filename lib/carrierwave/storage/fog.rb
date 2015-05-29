@@ -375,8 +375,13 @@ module CarrierWave
             case fog_provider
             when 'AWS'
               # check if some endpoint is set in fog_credentials
-              if @uploader.fog_credentials.has_key?(:endpoint)
-                "#{@uploader.fog_credentials[:endpoint]}/#{@uploader.fog_directory}/#{encoded_path}"
+              endpoint = @uploader.fog_credentials[:endpoint]
+              if endpoint
+                if endpoint.respond_to? :call
+                  "#{endpoint.call(self)}/#{@uploader.fog_directory}/#{encoded_path}"
+                else
+                  "#{endpoint}/#{@uploader.fog_directory}/#{encoded_path}"
+                end
               else
                 protocol = @uploader.fog_use_ssl_for_aws ? "https" : "http"
 
