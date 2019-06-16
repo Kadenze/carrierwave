@@ -90,8 +90,15 @@ module CarrierWave
       end
 
       def sanitized_file
-        ActiveSupport::Deprecation.warn('#sanitized_file is deprecated, use #file instead.')
-        file
+        _content = file.read
+        return if _content.nil?
+        if _content.is_a?(File) # could be if storage is Fog
+          sanitized = CarrierWave::Storage::Fog.new(self).retrieve!(File.basename(_content.path))
+        else
+          sanitized = SanitizedFile.new :tempfile => StringIO.new(_content),
+            :filename => File.basename(path), :content_type => file.content_type
+        end
+        sanitized
       end
 
       ##
