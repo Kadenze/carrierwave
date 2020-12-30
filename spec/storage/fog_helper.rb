@@ -96,7 +96,10 @@ end
           if file.is_a?(CarrierWave::Storage::Fog::File)
             if @provider == 'AWS'
               expect(@storage.connection).to receive(:copy_object)
-                                              .with(anything, anything, anything, anything, { "Content-Type"=>file.content_type, "x-amz-acl"=>"public-read" }).and_call_original
+                                              .with(anything, anything, anything, anything, { "x-amz-acl"=>"public-read" }).and_call_original
+            elsif @provider == 'Google'
+              expect(@storage.connection).to receive(:copy_object)
+                                              .with(anything, anything, anything, anything, { destination_predefined_acl: "publicRead" }).and_call_original
             else
               expect(@storage.connection).to receive(:copy_object)
                                               .with(anything, anything, anything, anything, { "Content-Type"=>file.content_type }).and_call_original
