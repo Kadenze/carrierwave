@@ -11,6 +11,54 @@ describe CarrierWave::Uploader::Download do
 
   after { FileUtils.rm_rf(public_path) }
 
+  describe 'RemoteFile' do
+    context 'when skip_ssrf_protection is false' do
+      subject do
+        CarrierWave::Uploader::Download::RemoteFile.new(url, {}, skip_ssrf_protection: false)
+      end
+      before do
+        stub_request(:get, "http://www.example.com/#{test_file_name}")
+            .to_return(body: test_file, headers: {"Content-Type" =>  'image/jpeg', "Vary" => 'Accept-Encoding'})
+        subject.read
+      end
+
+      it 'returns content type' do
+        expect(subject.content_type).to eq 'image/jpeg'
+      end
+
+      it 'returns header' do
+        expect(subject.headers['vary']).to eq 'Accept-Encoding'
+      end
+
+      it 'returns resolved URI' do
+        expect(subject.uri.to_s).to match %r{http://[^/]+/test.jpg}
+      end
+    end
+
+    context 'when skip_ssrf_protection is true' do
+      subject do
+        CarrierWave::Uploader::Download::RemoteFile.new(url, {}, skip_ssrf_protection: true)
+      end
+      before do
+        WebMock.stub_request(:get, "http://www.example.com/#{test_file_name}")
+          .to_return(body: test_file, headers: {"Content-Type" => 'image/jpeg', "Vary" => 'Accept-Encoding'})
+        subject.read
+      end
+
+      it 'returns content type' do
+        expect(subject.content_type).to eq 'image/jpeg'
+      end
+
+      it 'returns header' do
+        expect(subject.headers['vary']).to eq 'Accept-Encoding'
+      end
+
+      it 'returns URI' do
+        expect(subject.uri.to_s).to eq 'http://www.example.com/test.jpg'
+      end
+    end
+  end
+
   describe '#download!' do
     before do
       allow(CarrierWave).to receive(:generate_cache_id).and_return(cache_id)
@@ -87,6 +135,19 @@ describe CarrierWave::Uploader::Download do
         expect_any_instance_of(klass).to receive(:download).with(url, {})
         uploader.download!(url)
       end
+    end
+  end
+
+  describe "#skip_ssrf_protection?" do
+    let(:uri) { 'http://localhost/test.jpg' }
+    before do
+      WebMock.stub_request(:get, uri).to_return(body: test_file)
+      allow(uploader).to receive(:skip_ssrf_protection?).and_return(true)
+    end
+
+    it "allows local request to be made" do
+      uploader.download!(uri)
+      expect(uploader.file.read).to eq 'this is stuff'
     end
   end
 end
