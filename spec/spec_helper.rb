@@ -18,10 +18,9 @@ require 'open-uri'
 require "webmock/rspec"
 require 'mini_magick'
 require 'active_support/core_ext'
+require 'rspec/retry'
 
 I18n.enforce_available_locales = false
-
-CARRIERWAVE_DIRECTORY = "carrierwave#{Time.now.to_i}" unless defined?(CARRIERWAVE_DIRECTORY)
 
 alias :running :lambda
 
@@ -136,6 +135,14 @@ RSpec.configure do |config|
   config.include CarrierWave::Test::I18nHelpers
   config.include CarrierWave::Test::ManipulationHelpers
   config.prepend CarrierWave::Test::SsrfProtectionAwareWebMock
+  config.verbose_retry = true
+  config.display_try_failure_messages = true
+  config.around :each, :with_retry do |example|
+    example.run_with_retry retry: 2
+  end
+  config.retry_callback = proc do |example|
+    sleep 1
+  end
   if RUBY_ENGINE == 'jruby'
     config.filter_run_excluding :rmagick => true
   end
